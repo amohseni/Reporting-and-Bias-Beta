@@ -147,7 +147,7 @@ shinyServer(function(input, output, session) {
         # Increment the progress bar, and update the detail text.
         incProgress(1 / length(SampleOfNewsReports), detail = paste("Round", i, sep = " "))
       }
-      # Determin which reports were accepted with whcih to calculate the Bayesian estimator of the SD of the accpeted reports
+      # Determine which reports were accepted with whcih to calculate the Bayesian estimator of the SD of the accpeted reports
       whichReportsAccepted <- which(acceptRejectVector %in% c(1))
       
       # Record the posterio mean and SD of individual belief
@@ -170,7 +170,6 @@ shinyServer(function(input, output, session) {
           c(meanPerception, sdPerception)
         )
       return(h)
-    
     })
     
     # PLOT 1: State of the world distribution
