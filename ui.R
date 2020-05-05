@@ -55,7 +55,7 @@ shinyUI(fluidPage(
         "trueStateSD",
         "True standard deviation \\(\\sigma\\):",
         min = 0.5,
-        max = 3.5,
+        max = 3,
         value = 1,
         step = 0.5
       ),
@@ -68,7 +68,7 @@ shinyUI(fluidPage(
         min = 1,
         max = 3,
         value = 1.5,
-        step = 0.1
+        step = 0.5
       ),
       
       # Cherry-picking of extreme events by news
@@ -76,9 +76,9 @@ shinyUI(fluidPage(
         "cherryPicking",
         "Extremity bias for reporting of unusual events \\(e\\):",
         min = 0,
-        max = 5,
-        value = 2,
-        step = 0.25
+        max = 3,
+        value = 1.5,
+        step = 0.5
       ),
       
       # "Fair-and-balanced" reporting of events by the news
@@ -93,7 +93,7 @@ shinyUI(fluidPage(
         "Individual confirmation bias \\(b\\):",
         min = -5,
         max = 5,
-        value = -2,
+        value = -1,
         step = 0.5
       ),
       
@@ -102,9 +102,9 @@ shinyUI(fluidPage(
         "strengthOfBias",
         "Strength of individual confirmation bias \\(s\\):",
         min = 0,
-        max = 1,
-        value = 0.5,
-        step = 0.1
+        max = 3,
+        value = 1,
+        step = 0.5
       ),
       
       # Weight of reports vs. individual bias
@@ -113,9 +113,13 @@ shinyUI(fluidPage(
         "Number of reports \\(10^q\\):",
         min = 1,
         max = 3,
-        value = 2,
+        value = 2.5,
         step = .5
-      )
+      ),
+      
+      # Rerun simulation
+      tags$head(tags$script(src = "message-handler.js")),
+      p(actionButton("RerunSimulation", "RERUN SIMULATION"), align = "center")
       
     ),
     

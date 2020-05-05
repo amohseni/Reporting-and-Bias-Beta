@@ -44,3 +44,8 @@ print(paste("mu_0 = ", round(mu_0, digits = 2), "; var_0 = ", round(var_0, digit
 print(paste("x_bar = ", round(x_bar, digits = 2), "; x_var = ", round(x_var, digits = 2), sep = ""))
 print(paste("mu_post =", round(mean_post, digits = 2), "; var_post =", round(var_post, digits = 2), sep = ""))
 
+# Try this piecemeal
+for(i in 1:length(x)) {
+  
+}
+

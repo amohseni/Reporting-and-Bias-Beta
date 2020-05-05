@@ -18,6 +18,10 @@ x <- seq(from = -10,
 # Define server logic
 shinyServer(function(input, output, session) {
   computeDynamics <- reactive({
+    
+    # Activate the simulation when 'RERUN SIMULATION' button is pressed
+    simulationResetVariable <- input$RerunSimulation
+    
     # Create the distribution of events for true state of the world
     x <- seq(from = -10,
              to = 10,
