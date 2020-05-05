@@ -97,11 +97,11 @@ shinyUI(fluidPage(
         step = 0.5
       ),
       
-      # Weight of reports vs. individual bias
+      # Strength of individual bias
       sliderInput(
         "strengthOfBias",
         "Strength of individual confirmation bias \\(s\\):",
-        min = 0,
+        min = .5,
         max = 3,
         value = 1,
         step = 0.5
