@@ -101,7 +101,7 @@ shinyUI(fluidPage(
       sliderInput(
         "strengthOfBias",
         "Strength of individual confirmation bias \\(s\\):",
-        min = .5,
+        min = 0,
         max = 3,
         value = 1,
         step = 0.5
