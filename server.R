@@ -18,47 +18,64 @@ x <- seq(from = -10,
 # Define server logic
 shinyServer(function(input, output, session) {
   computeDynamics <- reactive({
-    # Activate the simulation when 'RERUN SIMULATION' button is pressed
+    
+    # Re-run the simulation when 'RERUN SIMULATION' button is pressed
     simulationResetVariable <- input$RerunSimulation
     
     # Create the distribution of events for true state of the world
     x <- seq(from = -10,
              to = 10,
              by = 0.1)
-    TrueStateMean <- as.numeric(input$trueStateMean)
-    TrueStateSD <- as.numeric(input$trueStateSD)
-    WorldDistribution <-
-      sapply(x, dnorm, mean = TrueStateMean, sd = TrueStateSD)
-    NormalizingFactor <- sum(WorldDistribution)
-    # The strength of bias reflects the quantity of reports that are collected
-    StrengthOfBias <- as.numeric(input$strengthOfBias)
-    # Set the initial agent beliefs
-    Bias <- as.numeric(input$individualBias)
-    priorMean <- Bias
-    priorSD <- TrueStateSD
     
-    # Create the distribution of events for the appearance portrayed by news media
+    # Get the simulation parameter values from the GUI sliders:
+    # 1. The true distribution
+    # The mean of the true distribution
+    TrueStateMean <- as.numeric(input$trueStateMean) 
+    # The standard deviation of the true distribution
+    TrueStateSD <- as.numeric(input$trueStateSD) 
+    # A sampling distributon for the true distribution
+    WorldDistribution <- 
+      sapply(x, dnorm, mean = TrueStateMean, sd = TrueStateSD)
+    # The total mass of the sampling distribution to be used in (re-)normalization
+    NormalizingFactor <- sum(WorldDistribution) 
+    
+    # 2. The agent's bias & prior beliefs
+    # The strength of confirmation bias of agents
+    StrengthOfBias <- as.numeric(input$strengthOfBias) 
+    # The initial position of confirmation of agents
+    Bias <- as.numeric(input$individualBias) 
+    # The initial mean of the prior of agents
+    priorMean <- Bias 
+    # The initial standard deviation of the prior of agents
+    priorSD <- TrueStateSD 
+    
+    # 3. The reporting practices as play
+    # The degree of hypoerbole in reports
     Hyperbole <- as.numeric(input$hyperbole)
+    # The initial (pre-distortion) mean of the reported distribition
     NewsMean <- TrueStateMean
+    # The initial (pre-distortion) standard deviation of the reported distribition
     NewsSD <- TrueStateSD
-    # Apply hyperbole distortion
+    
+    # Next, create the distribution of events for the appearance portrayed by news media
+    # Apply the hyperbole distortion
     NewsDistribution <-
       sapply(x,
              dnorm,
              mean = Hyperbole * NewsMean,
              sd = Hyperbole ^ 2 * NewsSD)
-    # Apply extremity bias distortion
+    # Apply the extremity bias distortion
     CherryPicking <- as.numeric(input$cherryPicking)
     NewsDistribution[which(-CherryPicking < x &
                              x < CherryPicking)] <- 0
-    # Apply fair-and-balanced distortion
+    # Apply the fair-and-balanced distortion
     if (as.numeric(input$fairAndBalanced) == 1) {
       NewsDistribution[which(x < 0)] <-
         NewsDistribution[which(x < 0)] * (sum(NewsDistribution[which(x > 0)]) / (sum(NewsDistribution[which(x < 0)])))
     }
     # Re-normalize distribution
     NewsDistribution <-
-      NewsDistribution * (NormalizingFactor / sum(NewsDistribution)) # renormalize
+      NewsDistribution * (NormalizingFactor / sum(NewsDistribution)) 
     data <-
       sample(x,
              size = 10000,
@@ -74,10 +91,10 @@ shinyServer(function(input, output, session) {
     # Update the number of reports observed by individuals
     quantityOfEvidence <- as.numeric(input$quantityOfEvidence)
     
-    # Sample (10^q) reportss from the News Distribution
+    # Sample (10^q + k) reportss from the News Distribution
     SampleOfNewsReports <-
       sample(x,
-             10 ^ (quantityOfEvidence),
+             10 ^ (quantityOfEvidence + 1),
              prob = NewsDistribution,
              replace = T)
     
@@ -85,26 +102,17 @@ shinyServer(function(input, output, session) {
     # It take reports and prior beliefs about the mean and SD as inputs,
     # and has posterior beliefs aobut the population mean and SD as outputs.
     update <- function(priorMean, priorSD, report) {
-      posteriorMean <-
-        normnp(
-          report,
-          m.x = priorMean,
-          s.x = priorSD,
-          sigma.x = 1,
-          mu = NULL,
-          n.mu = 100,
-          plot = FALSE
-        )$mean
-      posteriorSD <-
-        normnp(
-          report,
-          m.x = priorMean,
-          s.x = priorSD,
-          sigma.x = 1,
-          mu = NULL,
-          n.mu = 100,
-          plot = FALSE
-        )$sd
+      x <- normnp(
+        report,
+        m.x = priorMean,
+        s.x = priorSD,
+        sigma.x = 1,
+        mu = NULL,
+        n.mu = 100,
+        plot = FALSE
+      )
+      posteriorSD <- x$sd
+      posteriorMean <- x$mean
       return(c(posteriorMean, posteriorSD))
     }
     
@@ -122,7 +130,22 @@ shinyServer(function(input, output, session) {
     # (2) If she rejects the report, then her view remains unchanged.
     # If she accepts the report, then she updates her beliefs via Bayes rule.
     # (3) The process begins again with a new report and her new beliefs.
-    for (i in 1:length(SampleOfNewsReports)) {
+    
+    # But first, set the initial state of the counters 
+    # for the number of pieces of evidence considered
+    # and the number of pieces of evdience update upon.
+    PiecesOfEvidenceConsidered <- 0
+    PiecesOfEvidenceUpdatedOn <- 0
+    
+    # Now, keep exposing the agent to evidence 
+    # until she has updated the required number of times
+    while (PiecesOfEvidenceUpdatedOn < 10 ^ quantityOfEvidence &
+           PiecesOfEvidenceConsidered < length(SampleOfNewsReports)) {
+      
+      # Increment the count for pieces of evidence considered
+      PiecesOfEvidenceConsidered <- PiecesOfEvidenceConsidered + 1
+      # Determine the index of the current data point to consider
+      i <- PiecesOfEvidenceConsidered
       # Consider the news report
       report <- SampleOfNewsReports[i]
       # First, check if strenght of bias = 0.
@@ -130,12 +153,14 @@ shinyServer(function(input, output, session) {
       if (StrengthOfBias == 0) {
         # record that the report was accepted,
         acceptRejectVector[i] <- 1
+        # Increment the count for pieces of evidence updated upon
+        PiecesOfEvidenceUpdatedOn <- PiecesOfEvidenceUpdatedOn + 1
         # and update the belief state via Bayes' rule.
         updatedParams <- update(priorMean, priorSD, report)
       } else {
         # And (1) Decide whether confirmation bias will allow you to update
         # If confirmation bias makes it so that the report is rejected,
-        # then simply leave the belief state as is
+        # Then simply leave the belief state as is
         if (abs(priorMean - report) > abs(priorMean - rnorm(1, mean = priorMean, StrengthOfBias ^ -1))) {
           # Record that the report was rejected
           acceptRejectVector[i] <- 0
@@ -145,7 +170,9 @@ shinyServer(function(input, output, session) {
           # If conformation bias does not make it so that the report is rejected,
           # record that the report was accepted,
           acceptRejectVector[i] <- 1
-          # then update the belief state via Bayes' rule.
+          # Increment the count for pieces of evidence updated upon
+          PiecesOfEvidenceUpdatedOn <- PiecesOfEvidenceUpdatedOn + 1
+          # Then update the belief state via Bayes' rule.
           updatedParams <- update(priorMean, priorSD, report)
         }
       }
@@ -155,15 +182,12 @@ shinyServer(function(input, output, session) {
       # Store thes in their respective vectors
       priorMeanVector[i] <- priorMean
       priorSDVector[i] <- priorSD
-      
-      # Increment the progress bar, and update the detail text.
-      incProgress(1 / length(SampleOfNewsReports),
-                  detail = paste("Round", i, sep = " "))
     }
+    
     # Determine which reports were accepted with whcih to calculate the Bayesian estimator of the SD of the accpeted reports
     whichReportsAccepted <- which(acceptRejectVector %in% c(1))
     
-    # Record the posterio mean and SD of individual belief
+    # Record the posterior mean and SD of individual belief
     meanPerception <- priorMeanVector[length(SampleOfNewsReports)]
     sdPerception <- sd(SampleOfNewsReports[whichReportsAccepted])
     # And produce the normal distribution corresponding to that belief
