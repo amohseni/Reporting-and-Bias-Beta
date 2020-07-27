@@ -12,13 +12,13 @@ getwd()
 setwd("~/GitHub/Reporting-and-Bias-Beta/resources")
 
 # Determine parameter values to test
-Runs <- 100 # The number of runs of the simulation
+Runs <- 10 # The number of runs of the simulation
 TrueStateSD <- 1
-TrueStateMeanVEC <- seq(from = -1, to = 1, by = 1)
-BiasVEC <- seq(from = -1, to = 1, by = 1)
-BiasStrengthVEC <- c(10 ^ -1, 1)
-HyperboleVEC <- seq(from = 1, to = 2, by = 1)
-ExtermityBiasVEC <- seq(from = 0, to = 1, by = 1)
+TrueStateMeanVEC <- seq(from = -1, to = 1, by = 0.4)
+BiasVEC <- seq(from = -1, to = 1, by = 0.4)
+BiasStrengthVEC <- seq(from = 0, to = 2, by = 0.4)
+HyperboleVEC <- seq(from = 1, to = 2, by = 0.2)
+ExtermityBiasVEC <- seq(from = 0, to = 1, by = 0.2)
 FairAndBalancedVEC <- c(0, 1)
 QuantityOfEvidence <- 3
 
@@ -194,7 +194,7 @@ for (i in 1:TotalNumberOfCases) {
       # If so, the agent simply accepts the data.
       if (BiasStrength == 0) {
         # Record that the report was accepted,
-        acceptRejectVector[i] <- 1
+        acceptRejectVector[obs] <- 1
         
         # Increment the count for pieces of evidence updated upon
         reportsUpdatedOn <- reportsUpdatedOn + 1
@@ -249,6 +249,8 @@ for (i in 1:TotalNumberOfCases) {
   # Save the average across all runs for the case into the data frame
   Df[i, 7] <- mean(meanPerceptionVec)
   Df[i, 8] <- mean(sdPerceptionVec)
+  # Print the progress of the algorithm
+  paste("Run number ", i, " of ", TotalNumberOfCases, " completed.", sep = "")
 }
 
 # Calculate the errors in belief given the true states and agent beliefs
@@ -260,6 +262,27 @@ Df <- round(Df, digits = 3)
 
 # Print all the results as a CSV file
 write.csv(Df, file = "AllData.csv", row.names = FALSE)
+
+round(cor(Df), digits = 2)
+Df[Df$Hyperbole == 1 , ]
+ggplot(data = Df) +
+  geom_line(aes(x = Hyperbole,
+                y = BeliefMeanError,
+                color = BeliefMeanError),
+            colour = "white") +
+  theme_minimal() +
+  ggtitle("Hyperbole and Error") +
+  labs(x = "Hyperbole", y = "Belief Mean Error") +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      margin = margin(b = 10, unit = "pt"),
+      lineheight = 1.15
+    ),
+    axis.title.x =  element_text(margin = margin(t = 15, unit = "pt")),
+    axis.title.y =  element_text(margin = margin(r = 15, unit = "pt")),
+    text = element_text(size = 16)
+  )
 
 # # Plot MSE for means for each combinations of parameters
 # for (i in 1:length(TrueStateMeanVEC)) {
